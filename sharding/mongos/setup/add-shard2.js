@@ -1,0 +1,1 @@
+sh.addShard("shard2rs/shard2svr1:50004,shard2svr1:50005,shard2svr1:50006")

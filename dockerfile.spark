@@ -1,0 +1,18 @@
+# Use the official Spark image as the base image
+FROM bitnami/spark:latest
+
+# Install Python and pip
+USER root
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    apt-get clean
+
+# Install required Python libraries
+COPY spark-apps/requirements.txt /tmp/
+RUN pip3 install -r /tmp/requirements.txt
+
+# Copy the Python script
+COPY spark-apps /opt/spark-apps
+
+# Switch back to the spark user
+USER 1001

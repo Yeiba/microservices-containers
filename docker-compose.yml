@@ -1,0 +1,92 @@
+version: '3.8'
+
+volumes:
+  redis_one:
+    driver: local
+  redis_two:
+    driver: local
+  redis_three:
+    driver: local
+
+networks:
+  default:
+    name: microservices
+    external: false
+
+services: 
+  nginx:
+    container_name: loadbalancer
+    build: 
+      context: .
+      dockerfile: dockerfile.nginx
+    depends_on:
+      - user-app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/load_balancer/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+  user-app:
+    container_name: user-app
+    build: 
+      context: .
+      dockerfile: dockerfile.user-app
+    environment:
+      - PORT=8080
+    depends_on:
+      - mongo_one
+      - mongo_two
+      - mongo_three
+      - redis_one
+      - redis_two
+
+  mongo_one:
+    container_name: mongo1
+    image: mongo
+    command: mongod --replSet my-mongo-set
+    ports:
+      - 30001:27017
+    volumes: 
+      - ./mongo/mongo_one/data:/data/db
+    depends_on:
+      - mongo_two
+      - mongo_three
+
+  mongo_two:
+    container_name: mongo2
+    image: mongo
+    command: mongod --replSet my-mongo-set
+    ports:
+      - 30002:27017
+    volumes: 
+      - ./mongo/mongo_two/data:/data/db
+      
+  mongo_three:
+    container_name: mongo3
+    image: mongo
+    command: mongod --replSet my-mongo-set
+    ports:
+      - 30003:27017
+    volumes: 
+      - ./mongo/mongo_three/data:/data/db
+      
+  setup-rs:
+    image: "setup-rs"
+    container_name: setup-replicaSet
+    build: ./setup
+    depends_on:
+      - mongo_one
+      
+  redis_one:
+    container_name: cashing_layer
+    image: redis
+
+  redis_two:
+    container_name: session
+    image: redis
+
+  redis_three:
+    container_name: rediSearch
+    image: redis
+
+

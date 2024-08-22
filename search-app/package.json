@@ -1,0 +1,16 @@
+{
+  "name": "search-app",
+  "version": "1.0.0",
+  "description": "search app for all microservices",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon -L server.js"
+  },
+  "author": "Jacob Belhardi",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

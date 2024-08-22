@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  spark-master:
+    build: 
+      context: .
+      dockerfile: dockerfile.spark
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8081
+    ports:
+      - "8081:8081"  # Spark Web UI
+      - "7077:7077"  # Spark Master port
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+
+  spark-worker-1:
+    build: 
+      context: .
+      dockerfile: dockerfile.spark
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=512m
+    ports:
+      - "8082:8082"  # Spark Worker Web UI
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+
+
+  spark-worker-2:
+    build: 
+      context: .
+      dockerfile: dockerfile.spark
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=512m
+    ports:
+      - "8083:8083"  # Spark Worker Web UI
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+
+  spark-submit:
+    build: 
+      context: .
+      dockerfile: dockerfile.spark
+    image: custom-spark:latest
+    container_name: spark-submit
+    command: >
+      bash -c '
+        while [! nc -z spark-master 7077]; do
+        sleep 1;
+        done;
+        spark-submit --master spark://spark-master:7077 /opt/spark-apps/stream-mongodb-user.py
+      '
+    depends_on:
+      - spark-master
+      - spark-worker-1
+      - spark-worker-2
+
+
+  # jupyter:
+  #   image: jupyter/pyspark-notebook:latest
+  #   container_name: jupyter
+  #   environment:
+  #     - SPARK_MASTER=spark://spark-master:7077
+  #     - PYSPARK_PYTHON=python3
+  #     - PYSPARK_DRIVER_PYTHON=jupyter
+  #     - PYSPARK_DRIVER_PYTHON_OPTS="notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''"
+  #   ports:
+  #     - "8888:8888"  # Jupyter Notebook
+  #   volumes:
+  #     - ./notebooks:/home/jovyan/work
+
+
+
