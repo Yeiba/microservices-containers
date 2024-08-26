@@ -4,7 +4,28 @@ import redis from 'redis'
 import { MongoMemoryServer } from "mongodb-memory-server";
 import dotenv from 'dotenv';
 dotenv.config()
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const AWS = require('aws-sdk');
 import config from '../config.js';
+
+
+
+// Multer S3 Configuration
+async function s3Bucket() {
+    // AWS S3 Configuration
+    AWS.config.update({
+        accessKeyId: config.AWS_ACCESS_KEY_ID,
+        secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
+        region: config.AWS_REGION
+    });
+    try {
+        const s3 = await new AWS.S3();
+        return s3
+    } catch (error) {
+        console.log('we might not be as connected to s3_Bucket', error)
+    }
+}
 
 
 async function connect() {
@@ -68,4 +89,4 @@ async function redisSearchClient() {
     }
 }
 
-export { connect, cachRedisClient, sessionRedisClient, redisSearchClient };
+export { connect, cachRedisClient, sessionRedisClient, redisSearchClient, s3Bucket };
