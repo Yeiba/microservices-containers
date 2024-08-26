@@ -1,9 +1,8 @@
 import jwt from 'jsonwebtoken';
 import UserModel from '../model/User.model.js'
-import ENV from '../config.js'
 import dotenv from 'dotenv';
 dotenv.config()
-
+import config from '../config.js';
 // auth middleware
 export async function Auth(req, res, next) {
     try {
@@ -14,7 +13,7 @@ export async function Auth(req, res, next) {
         //  retrive the user details of the logged in user
         if (token) {
             try {
-                const decodedToken = await jwt.verify(token, process.env.JWT_SECRET)
+                const decodedToken = await jwt.verify(token, config.JWT_SECRET)
                 // req.user = await UserModel.findById({ _id: decodedToken });
                 req.user = decodedToken
                 // res.status(200).send({ msg: "Authorized user" })
@@ -38,7 +37,7 @@ export async function AuthSession(req, res, next) {
         if (token) {
             try {
                 // User is authenticated
-                const decodedToken = await jwt.verify(token, process.env.JWT_SECRET)
+                const decodedToken = await jwt.verify(token, config.JWT_SECRET)
                 req.user = decodedToken
                 next()
             } catch (error) {

@@ -12,6 +12,7 @@ import { notFoundHandler, errorHandler } from "./middleware/error.js";
 import path from "path";
 import dotenv from 'dotenv';
 dotenv.config()
+import config from '../config.js';
 
 import { connectProducer, disconnectFromKafka, createUserAppTopics } from "./utils/event-producer/event-producer.js";
 import { connectConsumer, disconnectConsumer } from "./utils/event-consumer/event-consumer.js";
@@ -45,7 +46,7 @@ const redisClient = Redis.createClient({
 })
 app.use(session({
     store: new RedisStore({ client: redisClient }),
-    secret: process.env.SESSION_SECRET,
+    secret: config.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     name: 'session_Token',
@@ -56,7 +57,7 @@ app.use(session({
     }
 }));
 
-const port = process.env.PORT || 8080;
+const port = config.PORT || 8080;
 // Api Routes
 app.use('/api', router)
 

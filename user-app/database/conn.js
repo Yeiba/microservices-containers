@@ -4,6 +4,7 @@ import redis from 'redis'
 import { MongoMemoryServer } from "mongodb-memory-server";
 import dotenv from 'dotenv';
 dotenv.config()
+import config from '../config.js';
 
 
 async function connect() {

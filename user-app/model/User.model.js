@@ -4,6 +4,9 @@ import ItemModel from '../model/User.model.js'
 // const mongoose = require('mongoose')
 
 export const UserSchema = new mongoose.Schema({
+    profilePhotoKey: {
+        type: String
+    }, // Add this field
     username: {
         type: String,
         required: [true, "Please provide unique Username"],

@@ -2,16 +2,16 @@ import UserModel from '../model/User.model.js'
 import jwt from 'jsonwebtoken';
 import bcrypt from "bcryptjs";
 import ENV from '../config.js'
-import dotenv from 'dotenv';
 import NodeRSA from 'node-rsa'
+import dotenv from 'dotenv';
 dotenv.config()
-
+import config from '../config.js';
 import { setToCach } from '../middleware/cach.js';
 import setToRediSearch from '../middleware/rediSearch.js';
 
 
-const key_private = new NodeRSA(process.env.PRIVATE_KEY)
-const key_public = new NodeRSA(process.env.PUBLIC_KEY)
+const key_private = new NodeRSA(config.PRIVATE_KEY)
+const key_public = new NodeRSA(config.PUBLIC_KEY)
 // const UserModel = require('../model/User.model')
 // const jwt = require('jsonwebtoken')
 // const bcrypt = require('bcrypt')
@@ -78,18 +78,19 @@ export async function register(req, res) {
                                 firstName,
                                 lastName,
                                 username,
+                                email,
                                 password: hashedPassword,
-                                email
+                                profilePhotoKey: req.file.key // Save the S3 key
                             })
                             user.save()
                                 .then((user) => {
                                     const token = jwt.sign({
                                         userId: user._id
-                                    }, process.env.JWT_SECRET, { expiresIn: "30d" })
+                                    }, config.JWT_SECRET, { expiresIn: "30d" })
 
                                     res.status(201).cookie('access_token', token, {
                                         httpOnly: true,
-                                        secure: process.env.NODE_ENV !== "development",
+                                        secure: config.NODE_ENV !== "development",
                                         sameSite: "strict",
                                         maxAge: 30 * 24 * 60 * 60 * 1000
                                     })
@@ -136,13 +137,13 @@ export async function login(req, res) {
                     // JWT token
                     const token = jwt.sign({
                         userId: user._id
-                    }, process.env.JWT_SECRET, { expiresIn: "30d" })
+                    }, config.JWT_SECRET, { expiresIn: "30d" })
 
 
 
                     res.status(201).cookie('access_token', token, {
                         httpOnly: true,
-                        secure: process.env.NODE_ENV !== "development",
+                        secure: config.NODE_ENV !== "development",
                         sameSite: "strict",
                         maxAge: 30 * 24 * 60 * 60 * 1000
                     })
