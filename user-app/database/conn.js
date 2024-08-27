@@ -4,8 +4,7 @@ import redis from 'redis'
 import { MongoMemoryServer } from "mongodb-memory-server";
 import dotenv from 'dotenv';
 dotenv.config()
-const multer = require('multer');
-const multerS3 = require('multer-s3');
+
 const AWS = require('aws-sdk');
 import config from '../config.js';
 

@@ -6,11 +6,12 @@ import * as controller from '../controllers/appController.js';
 import * as cach from '../middleware/cach.js';
 
 import { Auth, Restrict, AuthSession } from '../middleware/auth.js';
+import { s3Uupload } from "../utils/uploadS3.js";
 
 
 // Post Methods
 
-router.route('/register').post(controller.register); // register user
+router.route('/register').post(s3Uupload.single('profilePhoto'), controller.register); // register user
 // router.route('/registerMail').post();
 router.route('/authenticate').post(AuthSession, (req, res) => res.end());
 router.route('/login').post(controller.verifyUser, controller.login);

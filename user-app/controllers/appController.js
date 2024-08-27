@@ -7,7 +7,6 @@ dotenv.config()
 import config from '../config.js';
 import { setToCach } from '../middleware/cach.js';
 import setToRediSearch from '../middleware/rediSearch.js';
-import { s3Bucket } from './database/conn.js';
 
 
 const key_private = new NodeRSA(config.PRIVATE_KEY)
@@ -46,23 +45,12 @@ export async function verifyUser(req, res, next) {
 export async function register(req, res) {
 
     try {
-        const upload = await multer({
-            storage: multerS3({
-                s3: s3Bucket,
-                bucket: config.S3_BUCKET_NAME,
-                acl: 'public-read', // Adjust permissions as necessary
-                metadata: async (req, file) => ({ fieldName: file.fieldname }),
-                key: async (req, file) => `${Date.now().toString()}-${file.originalname}`
-            })
-        }).single('profilePhoto');
-
         const profileImage = await new Promise((resolve, reject) => {
             upload(req, res, (err) => {
                 if (err) reject(err);
                 resolve();
             })
         })
-
         const { firstName, lastName, username, email, password, re_password } = req.body;
 
         // check for existing username
