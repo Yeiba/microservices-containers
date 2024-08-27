@@ -7,6 +7,7 @@ dotenv.config()
 import config from '../config.js';
 import { setToCach } from '../middleware/cach.js';
 import setToRediSearch from '../middleware/rediSearch.js';
+import { s3Bucket } from '../database/conn.js';
 
 
 const key_private = new NodeRSA(config.PRIVATE_KEY)
@@ -103,9 +104,8 @@ export async function register(req, res) {
                                     req.session.token = token
                                     const { password, ...rest } = Object.assign({}, user.toJSON())
                                     setToRediSearch("user-index", rest)
-                                    // return save result as a response
-                                    const encrypted_res = key_public.encrypt(rest, 'base64')
-                                    return res.status(201).send({ msg: "Register Successful", data: encrypted_res })
+                                    const encrypted_rest = key_public.encrypt(rest, 'base64')
+                                    return res.status(201).send({ msg: "Register Successful", data: rest })
                                 }).catch(error => res.status(500).send({ error }))
 
                         }).catch(error => {
@@ -126,11 +126,6 @@ export async function register(req, res) {
 }
 //  POST /login
 export async function login(req, res) {
-    // const data = req.body
-
-    // const decrypt_data =
-    //     data &&
-    //     JSON.parse(key_private.decrypt(data, "utf8") || "{}")
 
     const { email, password } = req.body
 
@@ -154,12 +149,10 @@ export async function login(req, res) {
                     })
                     const { password, ...rest } = Object.assign({}, user.toJSON())
                     req.session.token = token
-
-                    const encrypted_res = key_public.encrypt(rest, 'base64')
-
+                    const encrypted_rest = key_public.encrypt(rest, 'base64')
                     return res.status(200).send({
                         msg: "Login successful",
-                        data: encrypted_res
+                        data: rest
                     })
                 })
                 .catch(error => {
@@ -204,12 +197,9 @@ export async function getUser(req, res) {
         if (!username) return res.status(501).send({ error: "Invalid Username" });
         await UserModel.findOne({ username }).then(async (user) => {
             const { password, ...rest } = Object.assign({}, user.toJSON());
-            const encrypted_res = key_public.encrypt(rest, 'base64')
-
+            const encrypted_rest = key_public.encrypt(rest, 'base64')
             const key = `GET_USER_${username}`
-
-
-            setToCach(key, 3600, encrypted_res)
+            setToCach(key, 3600, rest)
             return res.status(200).send(encrypted_res);
         })
     } catch (error) {
@@ -224,11 +214,52 @@ export async function getProfile(req, res) {
             await UserModel.findById({ _id: userId }).then(async (profile) => {
                 /** remove password from user */
                 // mongoose return unnecessary data with object so convert it into json
-                const { password, ...rest } = Object.assign({}, profile.toJSON())
-                const encrypted_res = key_public.encrypt(rest, 'base64')
+                const params = {
+                    Bucket: config.AWS_S3_BUCKET_NAME,
+                    Key: profile.profileImageKey
+                };
+                const profileImage = s3Bucket.getObject(params, (err, data) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error retrieving image from S3' });
+                    }
+                    return data.Body
+                });
+                const { password, ...rest } = Object.assign({}, profile.toJSON(), profileImage.toJSON());
+                const encrypted_rest = key_public.encrypt(rest, 'base64')
 
                 const key = `GET_PROFILE_${userId}`;
-                const result = { msg: "Get User Info", data: encrypted_res }
+                const result = { msg: "Get User Info", data: rest }
+                setToCach(key, 3600, result)
+
+                return res.status(200).send(result);
+            })
+        } else {
+            return res.status(401).send({ error: "User not Found" })
+        }
+    } catch (error) {
+        return res.status(400).send({ error: error.message });
+    }
+
+
+}
+export async function getProfileImage(req, res) {
+    const { userId } = req.user
+    try {
+        if (userId) {
+            await UserModel.findById({ _id: userId }).then(async (profile) => {
+                // Fetch the image from S3
+                const params = {
+                    Bucket: config.AWS_S3_BUCKET_NAME,
+                    Key: profile.profileImageKey
+                };
+                const profileImage = s3Bucket.getObject(params, (err, data) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error retrieving image from S3' });
+                    }
+                    return data.Body
+                });
+                const key = `GET_PROFILE_IMAGE_${userId}`;
+                const result = { msg: "Get User Image", data: profileImage }
                 setToCach(key, 3600, result)
 
                 return res.status(200).send(result);
@@ -257,10 +288,10 @@ export async function updateProfile(req, res) {
                     UserModel.findById({ _id: userId }).then(user => {
                         const { password, ...rest } = Object.assign({}, user.toJSON())
                         setToRediSearch("user-index", rest)
-                        const encrypted_res = key_public.encrypt(rest, 'base64')
+                        const encrypted_rest = key_public.encrypt(rest, 'base64')
                         return res.status(201).send({
                             msg: 'User Data updated successfully',
-                            data: encrypted_res
+                            data: rest
                         })
                     })
                 })
@@ -311,18 +342,12 @@ export async function deleteProfile(req, res) {
 }
 export async function getUsers(req, res) {
 
-    // let queryStr = JSON.stringify(req.query)
-    // queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => {
-    //     `$${match}`
-    // })
-    // const queryObj = JSON.parse(queryStr)
-
     try {
 
         await UserModel.find({}).then(users => {
             const user = users.map(user => {
                 const { password, ...rest } = Object.assign({}, user.toJSON())
-                const encrypted_res = key_public.encrypt(rest, 'base64')
+                const encrypted_rest = key_public.encrypt(rest, 'base64')
                 return rest
             })
             const key = `GET_USERS`

@@ -7,7 +7,7 @@ RUN if [ "$NODE_ENV" = "development " ]; \
     else npm install --only=production; \
     fi
 COPY ./user-app ./
-ENV PORT 8081
+ENV PORT 8080
 EXPOSE $PORT
 CMD ["node", "server.js"]
 

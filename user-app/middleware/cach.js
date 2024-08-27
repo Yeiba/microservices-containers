@@ -63,6 +63,28 @@ export async function getProfileFromCach(req, res, next) {
         return res.status(400).send({ error: error.message });
     }
 };
+export async function getProfileImageFromCach(req, res, next) {
+
+    const { userId } = req.user
+    try {
+        const key = `GET_PROFILE_IMAGE_${userId}`;
+        client.get(key).then(reply => {
+
+            if (reply) {
+                console.log('CACH HIT')
+                res.send(JSON.parse(reply));
+            } else {
+                console.log('CACH MISS')
+                next();
+            }
+        }).catch(err => {
+            console.log(err);
+            res.status(500).send(err)
+        });
+    } catch (error) {
+        return res.status(400).send({ error: error.message });
+    }
+};
 export async function getUsersFromCash(req, res, next) {
 
 
