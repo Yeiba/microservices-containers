@@ -1,0 +1,11 @@
+FROM node:21
+WORKDIR /app
+COPY ./package.json ./
+ARG NODE_ENV 
+RUN npm install --only=production
+COPY ./ ./
+ENV PORT 8081
+EXPOSE $PORT
+CMD ["node", "server.js"]
+
+
